@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Our Courses{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-center">🎓 Explore Our Courses</h2>
+
+
+<div id="courses-wrapper">
+
+	<!-- row -->
+	<div class="row">
+		{% for c in course %}
+
+		<!-- single course -->
+		<div class="col-md-3 col-sm-6 col-xs-6">
+			<div class="course">
+				<a href="{% url 'course_single_page' c.id %}" class="course-img">
+					<img src="{{ c.image.url }}" alt="">
+					<i class="course-link-icon fa fa-link"></i>
+				</a>
+				<a class="course-title" href="#">{{ c.description }}</a>
+				<div class="course-details">
+					<span class="course-category">{{ c.title }}</span>
+					<span class="course-price course-free">{{ c.course_type }}</span>
+					
+				</div>
+				{% if c.course_type == 'premium' %}
+					<p><strong>Price:</strong> ₹{{ c.price }}</p>
+					{% endif %}
+			</div>
+
+		</div>
+
+		{% endfor %}
+	</div>
+
+
+	{% endblock %}

@@ -1,0 +1,69 @@
+
+{% extends 'base.html' %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+
+<div id="courses-wrapper">
+
+  <!-- row -->
+  <div class="row flex justify-between">
+
+
+    <!-- single course -->
+    <div class="col-md-3 col-sm-6 col-xs-6">
+      <div class="course">
+        <a href="#" class="course-img">
+          <img src="{{ course.image.url }}" alt="">
+          <i class="course-link-icon fa fa-link"></i>
+        </a>
+        <a class="course-title" href="#">{{ course.description }}</a>
+        <div class="course-details">
+          <span class="course-category">{{ course.title }}</span>
+          <span class="course-price course-free">{{ course.course_type }}</span>
+        </div>
+
+        {% if course.course_type == 'premium' %}
+        <p><b>Price:</b> ₹{{ course.price }}</p>
+        <a href="{% url 'payment_page' course.id %}">Buy Course</a>
+        {% else %}
+        <p>🆓 Free Course</p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDE : Enroll Card -->
+    <div class="col-md-4">
+      <div class="course-enroll-card">
+        <h3>
+          {% if course.course_type == "free" %}
+          FREE
+          {% else %}
+          PREMIUM
+          {% endif %}
+        </h3>
+
+        <hr>
+
+        <ul class="list-unstyled">
+          <li>✔ Full Lifetime Access</li>
+          <li>✔ Certificate Included</li>
+          <li>✔ Mobile & Desktop</li>
+        </ul>
+
+        <button class="btn btn-success btn-block btn-lg">
+          <a href="{% url 'enroll_course' course.id %}">Enroll Now</a>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+</div>
+
+
+</div>
+{% endblock %}

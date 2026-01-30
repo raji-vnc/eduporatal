@@ -1,0 +1,114 @@
+<style>
+    .stripe-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg, #635bff, #7a73ff);
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .stripe-card {
+        background: #ffffff;
+        width: 360px;
+        padding: 28px;
+        border-radius: 18px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        text-align: center;
+        animation: slideUp 0.6s ease;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stripe-card h2 {
+        color: #32325d;
+        margin-bottom: 6px;
+    }
+
+    .stripe-card p {
+        color: #6b7c93;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+
+    .price {
+        font-size: 28px;
+        font-weight: 700;
+        color: #635bff;
+        margin-bottom: 22px;
+    }
+
+    .pay-btn {
+        width: 100%;
+        background: #635bff;
+        color: #fff;
+        border: none;
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .pay-btn:hover {
+        background: #5148e5;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 91, 255, 0.4);
+    }
+
+    .secure {
+        margin-top: 14px;
+        font-size: 13px;
+        color: #24b47e;
+    }
+
+    .test-info {
+        margin-top: 16px;
+        background: #f6f9fc;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        color: #8898aa;
+    }
+</style>
+
+<div class="stripe-wrapper">
+    <div class="stripe-card">
+        <h2>Secure Payment</h2>
+        <p>Pay safely using Stripe</p>
+
+        <div class="price">
+            ₹ {{ course.price }}
+        </div>
+
+        <button id="checkout-button" class="pay-btn">
+            Pay Now
+        </button>
+
+        <div class="secure">
+            🔒 Stripe Protected Checkout
+        </div>
+
+        <div class="test-info">
+            <strong>Test Card</strong><br>
+            4242 4242 4242 4242<br>
+            Expiry: Any future date · CVV: Any
+        </div>
+    </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    var stripe = Stripe("{{ stripe_public_key }}");
+
+    document.getElementById("checkout-button").addEventListener("click", function () {
+        fetch("{% url 'create_checkout_session' course.id %}")
+            .then(response => response.json())
+            .then(session => stripe.redirectToCheckout({ sessionId: session.id }))
+            .catch(error => alert("Stripe error: " + error));
+    });
+</script>
+

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+  <style>
+    body { font-family: Arial; padding: 40px; text-align: center; }
+    .success {
+      color: #16a34a;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    a {
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="success">✅ Payment Successful!</div>
+  <p>You now have access to this course.</p>
+
+  <a href="{% url 'course_detail' course.id %}">
+    Go to Course
+  </a>
+  
+{% endblock %}

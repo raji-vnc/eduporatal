@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Our Courses{% endblock %}
+
+{% block content %}
+
+
+<h1>{{ course.title }}</h1>
+
+<p><strong>Description:</strong> {{ course.description }}</p>
+
+<p><strong>Course Type:</strong> {{ course.course_type }}</p>
+
+<p><strong>Price:</strong>
+    {% if course.course_type == 'free' %}
+        Free
+    {% else %}
+        ₹{{ course.price }}
+    {% endif %}
+</p>
+<h1>{{ course.title }}</h1>
+<p>{{ course.description }}</p>
+
+
+{% if course.course_type == 'paid' %}
+    {% if enrollment and enrollment.paid %}
+        <p style="color:green;">✅ You are enrolled</p>
+    {% else %}
+        <a href="{% url 'payment_page' course.id %}">
+            <button>Buy Now – ₹{{ course.price }}</button>
+        </a>
+    {% endif %}
+{% endif %}
+
+
+
+<hr>
+
+<h2>📚 Course Content</h2>
+
+{% for item in contents %}
+    <div style="margin-bottom:20px;">
+        <h4>{{ item.order }}. {{ item.title }}</h4>
+
+        {% if item.content_type == 'video' %}
+            <video width="600" controls>
+                <source src="{{ item.video_file.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+
+        {% elif item.content_type == 'pdf' %}
+            <a href="{{ item.pdf_file.url }}" target="_blank">
+                📄 Download / View PDF
+            </a>
+        {% endif %}
+    </div>
+{% empty %}
+    <p>No content added yet.</p>
+{% endfor %}
+
+
+{% endblock %}
