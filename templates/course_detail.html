@@ -25,7 +25,7 @@
     {% if enrollment and enrollment.paid %}
         <p style="color:green;">✅ You are enrolled</p>
     {% else %}
-        <a href="{% url 'payment_page' course.id %}">
+        <a class="btn btn-primary" href="{% url 'payment_page' course.id %}">
             <button>Buy Now – ₹{{ course.price }}</button>
         </a>
     {% endif %}

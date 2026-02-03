@@ -1,12 +1,13 @@
 from locale import currency
+from django.contrib import messages
 from venv import create
 from django.shortcuts import redirect, render
 from django.shortcuts import render, get_object_or_404
 from requests import session
 from .forms import CourseForm
-from .models import Course, Enrollment
+from .models import Course, Enrollment,Payment
 import stripe
-from django.http import HttpResponseForbidden 
+from django.http import HttpResponseForbidden, HttpResponseBadRequest
 from django.views.decorators.http import require_POST
 import logging
 from django.conf import settings
@@ -76,6 +77,68 @@ def course_payment(request,id):
     return render(request,'course_payment.html', {'course': course})
 
 @login_required
+def create_checkout_session(request, id):
+    course = get_object_or_404(Course, id=id)
+    amount_in_paise = int(course.price * 100) 
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        mode='payment',
+        line_items=[{
+            'price_data':{
+                'currency':'inr',
+                'product_data':{
+                    'name':course.title,
+                },
+                'unit_amount':amount_in_paise,
+            },
+            'quantity':1
+        }],
+        success_url="http://127.0.0.1:8000/payment-success/?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url="http://127.0.0.1:8000/payment-cancel/",
+    )
+
+    return redirect(session.url)
+
+@login_required
+def payment_page(request, id):
+    course = get_object_or_404(Course, id=id)
+    return render(request, 'payment_page.html', {'course': course})
+@login_required
+def payment_success(request):
+  
+    session_id = request.GET.get("session_id")
+
+    if not session_id:
+        return redirect("home")   # or any safe page
+
+    session = stripe.checkout.Session.retrieve(session_id)
+
+    # Get course id from metadata (best method)
+    course_id = session.metadata.get("course_id")
+
+    if not course_id:
+        return redirect("course_detail", id=course_id)
+    session = stripe.checkout.Session.retrieve(session_id)
+    payment_intent = session.payment_intent
+    amount_total = session.amount_total / 100  # Convert to main currency unit
+
+    # Save payment details to database
+    Payment.objects.create(
+        user=request.user,
+        payment_intent=payment_intent,
+        amount=amount_total,
+        status="completed"
+    )
+
+    return redirect("course_detail",session.metadata.get(course_id))
+
+def payment_cancel(request):
+    return render(request, 'payment_cancel.html')
+def get_payment_status(request, id):
+    enrollment = get_object_or_404(Enrollment, user=request.user, course_id=id)
+    return JsonResponse({'paid': enrollment.paid})
+
+@login_required
 def course_detail(request, id):
     course = get_object_or_404(Course, id=id)
     enrollment = Enrollment.objects.filter(
@@ -106,74 +169,34 @@ def course_detail(request, id):
         'enrollment': enrollment
     })
 
-@login_required
-def payment_success(request,id):
-    course = get_object_or_404(Course, id=id)
 
-    print("DEBUG payment_success")
-
-    Enrollment.objects.update_or_create(
-        user=request.user,
-        course=course,
-        defaults={'paid': True}
-    )
-
-    return redirect('course_detail', id=id)
-
-
-def payment_cancel(request,id):
-    return render(request,'payment_cancel.html')
-@login_required
-def payment_page(request,id):
-    course=get_object_or_404(Course,id=id)
-    session=stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price_data':{
-                'currency':'inr',
-                'product_data':{
-                    'name':course.title,
-                },
-                'unit_amount':int(course.price*100),
-            },
-           'quantity':1 ,
-        }],
-        mode='payment',
-        success_url=request.build_absolute_uri(f'/course/{course.id}/payment-cancel'),
-        cancel_url=request.build_absolute_uri(f'/course/{course.id}/payment-cancel/'),
-    )
-    return render(request,'payment_page.html',{
-        'course':course,
-        'session_id':session.id,
-        'stripe_public_key':settings.STRIPE_PUBLIC_KEY
+def register(request):
+    if request.method=='POST':
+        form=UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request,'Account created successfully')
+            username=form.cleaned_data.get('username')
+            password=form.cleaned_data.get('password1')
+            user=authenticate(username=username,password=password)
+            login(request,user)
+            return redirect('home')
+    else:
+        form=UserCreationForm()
+    return render(request,'signup.html',{
+        'form':form
     })
-
-@login_required
-@require_POST
-def create_checkout_session(request,id):
-    course=get_object_or_404(Course,id=id)
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price_data': {
-                'currency': 'inr',
-                'product_data': {
-                    'name': course.title,
-                },
-                'unit_amount': int(course.price * 100),
-            },
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url=request.build_absolute_uri(
-            f'/course/{course.id}/payment-success/'
-        ),
-        cancel_url=request.build_absolute_uri(
-            f'/course/{course.id}/payment/'
-        ),
-    )
-
-    return JsonResponse({
-        'id': session.id
-    })
-
+def login_view(request):
+    if request.method=='POST':
+        username=request.POST['username']
+        password=request.POST['password']
+        user=authenticate(request,username=username,password=password)
+        if user is not None:
+            login(request,user)
+            return redirect('home')
+        else:
+            messages.error(request,'Invalid username or password')
+    return render(request,'login.html')
+def logout_view(request):
+    logout(request)
+    return redirect('home')
